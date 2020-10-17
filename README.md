@@ -2,4 +2,4 @@
 SEIS 664 Lab 5
 
 
-This readme is now enhanced.
+This readme is now ENHANCED.
