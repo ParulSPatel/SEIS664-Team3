@@ -1,5 +1,4 @@
 from openpyxl import load_workbook
-# from pprint import PrettyPrinter
 from collections import OrderedDict
 from feature import Feature
 
@@ -32,7 +31,7 @@ class Sprint():
         self.profit = self.total_earn - self.team_pay
 
     def load(self, min_row=3, max_row=22, min_col=1, max_col=7):
-        workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx", data_only=True, read_only=True)
+        workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx")
         sheet = workbook['Calculations']
         for value in sheet.iter_rows(min_row=min_row,
                                      max_row=max_row,

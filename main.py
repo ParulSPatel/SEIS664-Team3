@@ -4,8 +4,8 @@ from openpyxl.styles import Font, Alignment, PatternFill
 
 
 def get_sprints(min_row=3, max_row=22, min_col=6, max_col=6):
-    workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx", data_only=True)
-    sheet = workbook['Mike']
+    workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx")
+    sheet = workbook['Calculations']
     return int(max(sheet.iter_rows(min_row=min_row,
                                    max_row=max_row,
                                    min_col=min_col,
@@ -26,9 +26,10 @@ def write_sprint_daily_results(sprints, start_column=9):
     earnings_row = 5
     earnings_column = start_column
     header_row = 3
+    final_daily_dollars = 0
     header_column = start_column
-    workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx", data_only=True)
-    sheet = workbook['Mike']
+    workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx")
+    sheet = workbook['Calculations']
     for sprint in sprints:
         cell = sheet.cell(row=header_row, column=header_column, value=f"Sprint {sprint.sprint_num}")
         cell.font = bold_font
@@ -37,6 +38,7 @@ def write_sprint_daily_results(sprints, start_column=9):
         for idx, (_, dollars) in enumerate(sprint.earnings.items(), start=1):
             sheet.cell(row=days_row, column=days_column, value=day_counter).fill = PatternFill(start_color="D3D3D3", fill_type="solid")
             sheet.cell(row=earnings_row, column=earnings_column, value=dollars)
+            final_daily_dollars = dollars
             day_counter += 1
             days_column += 1
             earnings_column += 1
@@ -51,20 +53,24 @@ def write_sprint_daily_results(sprints, start_column=9):
         days_row = header_row + 1
         earnings_row = header_row + 2
     workbook.save("CostofDelayPrioritizationCalculator.xlsx")
+    return day_counter, final_daily_dollars
 
 
-def write_totals(sprints, revenue_cell='E37', earnings_cell='F37'):
+def write_totals(sprints, revenue_cell='E37', earnings_cell='F37', staff_pay_cell='D37'):
     print("writing totals")
     total_earnings = 0
     total_revenue = 0
+    staff_pay = 0
     # get sprint tallies
     for sprint in sprints:
         total_revenue += sprint.total_earn
         total_earnings += sprint.profit
-    workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx", data_only=True)
+        staff_pay += sprint.team_pay
+    workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx")
     sheet = workbook['Calculations']
     sheet[revenue_cell] = total_revenue
     sheet[earnings_cell] = total_earnings
+    sheet[staff_pay_cell] = staff_pay
     workbook.save("CostofDelayPrioritizationCalculator.xlsx")
 
 
@@ -97,13 +103,23 @@ def main():
     print(max_sprints)
     sprints = build_sprints(max_sprints, 3, 22, 1, 7)
     write_totals(sprints)
-    write_sprint_daily_results(sprints)
+    num_days_iter_one, iter_one_final_daily = write_sprint_daily_results(sprints)
 
     max_sprints = get_sprints(42, 61, 6, 6)
     print(max_sprints)
     sprints = build_sprints(max_sprints, 42, 61, 1, 7)
-    write_totals(sprints, 'E75', 'F75')
-    write_sprint_daily_results(sprints, 15)
+    write_totals(sprints, 'E75', 'F75', 'D75')
+    num_days_iter_two, iter_two_final_daily = write_sprint_daily_results(sprints, 15)
+
+    # if the time-efficient iteration is shorter than the WSJF iteration we can show
+    # how the second iteration would have continued to accrue income in the time
+    # that the WSJF iteration was still running and showing revenue in our calculations
+    iter_diff = num_days_iter_one - num_days_iter_two
+    if iter_diff > 0:
+        workbook = load_workbook(filename="CostofDelayPrioritizationCalculator.xlsx")
+        sheet = workbook['Calculations']
+        sheet['C78'] = iter_two_final_daily * iter_diff
+        workbook.save('CostofDelayPrioritizationCalculator.xlsx')
 
 
 main()
